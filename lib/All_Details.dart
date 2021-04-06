@@ -313,6 +313,11 @@ class _AllDetailsState extends State<AllDetails> {
                           width: 40,
                         ),
                         GestureDetector(
+
+
+
+
+
                           onTap: () {
                             databaseRef
                                 .child("Data")
