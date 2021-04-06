@@ -1,4 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:admin_advance_bus_info/All_Details.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
@@ -9,87 +10,108 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
 
+  final databaseRef = FirebaseDatabase.instance.reference();
 
+  
 
-  String name;
-  String age;
-  String title;
-  String userID;
-  String useremail;
-  // Map<dynamic,dynamic> demo;
-  final databaseRef = FirebaseDatabase.instance.reference().child("Data");
-  List  lists = [];
-  final auth = FirebaseAuth.instance;
-  // List<String> names = [];
-  // List<dynamic> ages = [];
-
-  bool isLoading = true;
-
-  getCurrentuse() async {
-    final user = await auth.currentUser;
-    final uid = user.uid;
-    userID = uid;
-    setState(() {
-      isLoading = false;
-    });
-    print('User ID:  '+userID);
-    useremail = user.email;
-    print(user.email);
-  }
-
-  final _formkey = GlobalKey<FormState>();
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    getCurrentuse();
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    getCurrentuse();
-  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Admin of Advance Bus Info '),
-      ),
-      body: Form(
-        key: _formkey,
-        child: Container(
-          height: 300,
-          child: isLoading ? CircularProgressIndicator() :
-          FutureBuilder(
-              future: databaseRef.once(),
-              builder: (context, AsyncSnapshot<DataSnapshot> snapshot) {
-                if (snapshot.hasData) {
-                  lists.clear();
-                  Map<dynamic, dynamic> values = snapshot.data.value;
-                  values.forEach((key, values) {
-                    lists.add(values);
-                  });
-                  return new ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: lists.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        return Card(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text("Full Name: " + lists[index]["Full Name"]),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: Text('Admin',style: TextStyle(color: Colors.black,fontSize: 25,fontWeight: FontWeight.w600),),
 
-                            ],
-                          ),
-                        );
-                      });
+      ),
+      body: ListView(
+        children: [
+          StreamBuilder(
+            stream: databaseRef.child("Data").onValue,
+            builder: (context, snap){
+              if(snap.hasData){
+                Map<dynamic, dynamic> data = snap.data.snapshot.value;
+                // print(data.keys);
+                if(data == null){
+                  return Center(child: Text("No Passes Application"));
                 }
-                return CircularProgressIndicator();
-              })
-        ),
+
+                List<dynamic> userKey = [];
+                List<dynamic> userPhotos = [];
+                List<dynamic> userEmail = [];
+                List<dynamic> userName= [];
+                List<dynamic> userMap = [];
+
+                data.forEach((key, value) {
+                  userKey.add(key);
+                  userMap.add(value['PassData']);
+                  userName.add(value['FullName']);
+                  userEmail.add(value['EmailAddress']);
+                  userPhotos.add(value['UserPhoto']);
+                });
+
+
+                return Container(
+                        height: 500,
+                        child: ListView.builder(
+                            physics: AlwaysScrollableScrollPhysics(),
+                            itemCount: userMap.length,
+                            shrinkWrap: true,
+                            itemBuilder: (BuildContext context,int index){
+                          return Card(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Container(
+                                  height: 85,
+                                  width: 85,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(30),
+                                    image: DecorationImage(
+                                      image: NetworkImage(userPhotos[index].toString())
+                                    )
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+
+                                    children: [
+                                      Text('Name : ${userName[index].toString()}'),
+                                      SizedBox(height: 3,),
+                                      Text('Email : ${userEmail[index].toString()}'),
+                                      SizedBox(height: 3,),
+                                      Align(
+                                        alignment: Alignment.topRight,
+                                        child: RaisedButton(onPressed: (){
+                                          Navigator.push(context, MaterialPageRoute(builder: (context) => AllDetails(userID: userKey[index].toString())));
+                                        },child: Text('All Details',style: TextStyle(color: Colors.white),),color: Colors.indigo,),
+                                      )
+                                    ],
+                                  ),
+                                ),
+
+                              ],
+                            ),
+                          );
+                }),
+                      );
+              }
+              else if (snap.hasError) {
+                return Center(child: Text("Error occured..!"));
+              } else if (snap.hasData == false) {
+                return Center(child: Text("No data"));
+              } else {
+                return Center(
+                    child: CircularProgressIndicator());
+              }
+            },
+          ),
+
+        ],
       ),
     );
   }
